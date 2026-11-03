@@ -5,6 +5,7 @@ build/
 coverage/
 .vite/
 .env
+.env.prod
 .env.local
 .env.*.local
 __pycache__/
