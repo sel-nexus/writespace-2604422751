@@ -3,7 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+ARG VITE_SITE_TITLE="WriteSpace — your thoughts, your space"
+RUN VITE_SITE_TITLE="$VITE_SITE_TITLE" npm run build
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
