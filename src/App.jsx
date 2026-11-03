@@ -3,6 +3,8 @@ import Navbar from './components/Navbar';
 import BlogList from './pages/BlogList';
 import BlogDetail from './pages/BlogDetail';
 import PostEditor from './pages/PostEditor';
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -25,7 +27,8 @@ export default function App() {
           <Route path="/blog/:id" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
           <Route path="/write" element={<ProtectedRoute><PostEditor /></ProtectedRoute>} />
           <Route path="/edit/:id" element={<ProtectedRoute><PostEditor editMode /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute adminOnly><p className="mx-auto max-w-6xl px-6 py-16">Admin workspace is being prepared.</p></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
