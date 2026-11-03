@@ -1,13 +1,11 @@
-FROM node:20-alpine AS build
+FROM node:20-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 ARG VITE_SITE_TITLE="WriteSpace — your thoughts, your space"
-RUN VITE_SITE_TITLE="$VITE_SITE_TITLE" npm run build
-
-FROM nginxinc/nginx-unprivileged:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+RUN VITE_SITE_TITLE="$VITE_SITE_TITLE" npm run build && chown -R node:node /app
+USER node
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
+CMD ["node", "node_modules/vite/bin/vite.js", "preview", "--host", "0.0.0.0", "--port", "8080"]
+
