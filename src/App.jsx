@@ -1,5 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import BlogList from './pages/BlogList';
+import BlogDetail from './pages/BlogDetail';
+import PostEditor from './pages/PostEditor';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -18,7 +21,10 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={session ? <Navigate to={homeForRole(session.role)} replace /> : <Login />} />
           <Route path="/register" element={session ? <Navigate to={homeForRole(session.role)} replace /> : <Register />} />
-          <Route path="/blogs" element={<ProtectedRoute><p className="mx-auto max-w-6xl px-6 py-16">Blog workspace is being prepared.</p></ProtectedRoute>} />
+          <Route path="/blogs" element={<ProtectedRoute><BlogList /></ProtectedRoute>} />
+          <Route path="/blog/:id" element={<ProtectedRoute><BlogDetail /></ProtectedRoute>} />
+          <Route path="/write" element={<ProtectedRoute><PostEditor /></ProtectedRoute>} />
+          <Route path="/edit/:id" element={<ProtectedRoute><PostEditor editMode /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><p className="mx-auto max-w-6xl px-6 py-16">Admin workspace is being prepared.</p></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
