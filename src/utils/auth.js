@@ -33,9 +33,10 @@ export function authenticate(username, password) {
 
 /** Register a validated local user account and start its session. */
 export function registerAccount({ displayName, username, password, confirmPassword }, idFactory = () => crypto.randomUUID(), now = () => new Date().toISOString()) {
-  const name = String(displayName ?? '').trim();
-  const handle = String(username ?? '').trim();
-  const secret = String(password ?? '');
+  if ([displayName, username, password, confirmPassword].some((value) => typeof value !== 'string')) return { ok: false, field: 'form', error: 'Account details must be text.' };
+  const name = displayName.trim();
+  const handle = username.trim();
+  const secret = password;
   if (!name || !handle || !secret || !confirmPassword) return { ok: false, field: 'displayName', error: 'All fields are required.' };
   if (secret !== confirmPassword) return { ok: false, field: 'confirmPassword', error: 'Passwords do not match.' };
   const users = getUsers();
@@ -46,7 +47,12 @@ export function registerAccount({ displayName, username, password, confirmPasswo
   try {
     saveUsers([...users, user]);
     const session = { userId: user.id, username: user.username, displayName: user.displayName, role: user.role };
-    setSession(session);
+    try {
+      setSession(session);
+    } catch {
+      saveUsers(users);
+      return { ok: false, field: 'form', error: 'Your account could not be saved. Check browser storage and try again.' };
+    }
     return { ok: true, user, session };
   } catch {
     return { ok: false, field: 'form', error: 'Your account could not be saved. Check browser storage and try again.' };
@@ -55,9 +61,12 @@ export function registerAccount({ displayName, username, password, confirmPasswo
 
 /** Add an administrator-created account to local storage. */
 export function addManagedUser({ displayName, username, password, role }, idFactory = () => crypto.randomUUID(), now = () => new Date().toISOString()) {
-  const name = String(displayName ?? '').trim();
-  const handle = String(username ?? '').trim();
-  const secret = String(password ?? '');
+  if (typeof displayName !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
+    return { ok: false, error: 'Account details must be text.' };
+  }
+  const name = displayName.trim();
+  const handle = username.trim();
+  const secret = password;
   if (!name || !handle || !secret || !['admin', 'user'].includes(role)) return { ok: false, error: 'All fields are required.' };
   const users = getUsers();
   if (handle.toLowerCase() === 'admin' || users.some((user) => user.username.toLowerCase() === handle.toLowerCase())) {

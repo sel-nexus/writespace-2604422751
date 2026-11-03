@@ -8,8 +8,9 @@ export function listPosts(posts = getPosts()) {
 
 /** Create and persist a post using the active author's identity. */
 export function createPost({ title, content }, session, idFactory = () => crypto.randomUUID(), now = () => new Date().toISOString()) {
-  const cleanTitle = String(title ?? '').trim();
-  const cleanContent = String(content ?? '').trim();
+  if (typeof title !== 'string' || typeof content !== 'string') return { ok: false, error: 'Title and content must be text.' };
+  const cleanTitle = title.trim();
+  const cleanContent = content.trim();
   if (!session?.userId || !['admin', 'user'].includes(session.role)) return { ok: false, error: 'Sign in before writing a post.' };
   if (!cleanTitle || !cleanContent) return { ok: false, field: !cleanTitle ? 'title' : 'content', error: 'Title and content are required.' };
   const post = { id: idFactory(), title: cleanTitle, content: cleanContent, createdAt: now(), authorId: session.userId, authorName: session.displayName };
@@ -23,8 +24,9 @@ export function createPost({ title, content }, session, idFactory = () => crypto
 
 /** Update a post when its author or an administrator owns the operation. */
 export function updatePost(postId, { title, content }, session) {
-  const cleanTitle = String(title ?? '').trim();
-  const cleanContent = String(content ?? '').trim();
+  if (typeof title !== 'string' || typeof content !== 'string') return { ok: false, error: 'Title and content must be text.' };
+  const cleanTitle = title.trim();
+  const cleanContent = content.trim();
   if (!cleanTitle || !cleanContent) return { ok: false, field: !cleanTitle ? 'title' : 'content', error: 'Title and content are required.' };
   const posts = getPosts();
   const post = posts.find((entry) => entry.id === postId);

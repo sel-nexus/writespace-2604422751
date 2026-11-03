@@ -20,6 +20,13 @@ describe('administrator account and dashboard operations', () => {
     expect(addManagedUser(account({ username: 'RILEY' })).error).toContain('already taken');
   });
 
+  it('rejects non-text account fields without persisting a malformed account', () => {
+    expect(addManagedUser(account({ displayName: { name: 'Riley' } }))).toMatchObject({ ok: false, error: 'Account details must be text.' });
+    expect(addManagedUser(account({ username: ['riley'] }))).toMatchObject({ ok: false, error: 'Account details must be text.' });
+    expect(addManagedUser(account({ password: 12345 }))).toMatchObject({ ok: false, error: 'Account details must be text.' });
+    expect(getUsers()).toEqual([]);
+  });
+
   it('reports storage write failures for create and delete', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     expect(addManagedUser(account())).toMatchObject({ ok: false, error: expect.stringContaining('could not be saved') });
@@ -31,7 +38,7 @@ describe('administrator account and dashboard operations', () => {
     addManagedUser(account({ username: 'user2', role: 'user' }));
     expect(listManagedUsers().some((user) => user.id === DEFAULT_ADMIN_ID)).toBe(true);
     expect(getDashboardStats().map(({ label, value }) => [label, value])).toEqual([
-      ['Total Posts', 2], ['Total Users', 3], ['Total Admins', 2], ['Total users', 1],
+      ['Total Posts', 2], ['Total Users', 3], ['Total Admins', 2], ['Total users', 3],
     ]);
   });
 

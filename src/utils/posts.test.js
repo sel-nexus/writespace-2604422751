@@ -19,6 +19,8 @@ describe('post workflows', () => {
     expect(createPost({ title: 't', content: 'c' }, null).ok).toBe(false);
     expect(createPost({ title: ' ', content: 'c' }, user)).toMatchObject({ field: 'title' });
     expect(createPost({ title: 't', content: '' }, user)).toMatchObject({ field: 'content' });
+    expect(createPost({ title: { text: 'x' }, content: 'y' }, user)).toMatchObject({ ok: false, error: 'Title and content must be text.' });
+    expect(createPost({ title: 'x'.repeat(10001), content: 'y'.repeat(20001) }, user)).toMatchObject({ ok: true });
   });
 
   it('reports local storage failure rather than claiming to save', () => {
@@ -35,10 +37,27 @@ describe('post workflows', () => {
   it('updates owned posts, rejects invalid fields, missing ids and another owner', () => {
     savePosts([post]);
     expect(updatePost('p1', { title: 'Updated', content: 'Changed' }, user).post.title).toBe('Updated');
+    expect(getPosts()).toEqual([{ ...post, title: 'Updated', content: 'Changed' }]);
     expect(updatePost('p1', { title: '', content: 'x' }, user)).toMatchObject({ field: 'title' });
     expect(updatePost('missing', { title: 'x', content: 'y' }, user)).toMatchObject({ error: 'Post not found.' });
     expect(updatePost('p1', { title: 'x', content: 'y' }, other)).toMatchObject({ error: 'You cannot edit this post.' });
     expect(updatePost('p1', { title: 'Admin edit', content: 'y' }, admin).ok).toBe(true);
+  });
+
+  it('rejects non-text update fields without changing saved data and accepts large text as unspecified', () => {
+    savePosts([post]);
+    expect(updatePost('p1', { title: { text: 'bad' }, content: 'content' }, user)).toMatchObject({ ok: false, error: 'Title and content must be text.' });
+    expect(getPosts()).toEqual([post]);
+    const longContent = 'z'.repeat(20001);
+    expect(updatePost('p1', { title: 'Long note', content: longContent }, user).ok).toBe(true);
+    expect(getPosts()[0].content).toHaveLength(20001);
+  });
+
+  it('reports update storage failures and leaves the prior saved post unchanged', () => {
+    savePosts([post]);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    expect(updatePost('p1', { title: 'Updated', content: 'Changed' }, user)).toMatchObject({ ok: false, error: expect.stringContaining('could not be saved') });
+    expect(getPosts()).toEqual([post]);
   });
 
   it('deletes owned or admin-selected posts and rejects unauthorized or absent post', () => {
@@ -48,6 +67,13 @@ describe('post workflows', () => {
     expect(deletePost('missing', admin)).toMatchObject({ error: 'Post not found.' });
     expect(deletePost('p1', admin)).toEqual({ ok: true });
     expect(getPosts()).toEqual([]);
+  });
+
+  it('reports delete storage failures and keeps the saved post', () => {
+    savePosts([post]);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    expect(deletePost('p1', user)).toMatchObject({ ok: false, error: expect.stringContaining('could not be deleted') });
+    expect(getPosts()).toEqual([post]);
   });
 
   it('exposes ownership-aware card actions', () => {

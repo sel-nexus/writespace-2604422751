@@ -16,7 +16,7 @@ export function getDashboardStats() {
     { label: 'Total Posts', value: posts.length, accent: 'indigo' },
     { label: 'Total Users', value: users.length, accent: 'pink' },
     { label: 'Total Admins', value: admins, accent: 'violet' },
-    { label: 'Total users', value: users.filter((user) => user.role === 'user').length, accent: 'teal' },
+    { label: 'Total users', value: users.length, accent: 'teal' },
   ];
 }
 

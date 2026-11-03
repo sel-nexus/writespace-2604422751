@@ -42,11 +42,12 @@ describe('blog and editor pages', () => {
     expect(screen.getByText(/First line\s+Second line/)).toBeInTheDocument();
   });
 
-  it('shows detail content and only owner controls', () => {
-    savePosts([ownedPost, otherPost]);
+  it('shows detail content as plain text and only owner controls', () => {
+    savePosts([{ ...ownedPost, content: '<img src=x onerror=alert(1)>\nSecond line' }, otherPost]);
     renderRoute('/blog/p1');
     expect(screen.getByRole('heading', { name: 'A gentle beginning' })).toBeInTheDocument();
-    expect(screen.getByText(/First line\s+Second line/)).toBeInTheDocument();
+    expect(screen.getByText(/<img src=x onerror=alert\(1\)>\s+Second line/)).toBeInTheDocument();
+    expect(document.querySelector('img')).toBeNull();
     expect(screen.getByRole('link', { name: 'Edit post' })).toHaveAttribute('href', '/edit/p1');
     expect(screen.getByRole('button', { name: 'Delete post' })).toBeInTheDocument();
   });

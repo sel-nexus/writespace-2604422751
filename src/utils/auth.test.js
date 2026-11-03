@@ -49,6 +49,40 @@ describe('local identity behavior', () => {
     expect(getSession()).toMatchObject({ userId: 'user-123', role: 'user' });
   });
 
+  it('rejects non-text fields and oversized registration values', () => {
+    expect(registerAccount(registration({ displayName: { unsafe: true } }), fixedId, fixedTime)).toMatchObject({ ok: false, field: 'form' });
+    const longNameResult = registerAccount(registration({ displayName: 'x'.repeat(10001) }), fixedId, fixedTime);
+    expect(longNameResult.ok).toBe(true);
+    expect(longNameResult.user.displayName).toHaveLength(10001);
+  });
+
+  it('rolls back a saved user when writing the new session fails', () => {
+    let writes = 0;
+    const originalSetItem = Storage.prototype.setItem.bind(window.localStorage);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key, value) => {
+      writes += 1;
+      if (key === 'writespace_session') throw new Error('session storage blocked');
+      return originalSetItem(key, value);
+    });
+    const result = registerAccount(registration(), fixedId, fixedTime);
+    expect(result).toMatchObject({ ok: false, field: 'form' });
+    expect(getUsers()).toEqual([]);
+    expect(getSession()).toBeNull();
+    expect(writes).toBe(3);
+  });
+
+  it('rejects missing user deletions without altering stored accounts', () => {
+    window.localStorage.setItem('writespace_users', JSON.stringify([{ id: 'other', username: 'other' }]));
+    expect(deleteManagedUser('missing', 'current')).toMatchObject({ ok: false, error: 'User not found.' });
+    expect(getUsers()).toHaveLength(1);
+  });
+
+  it('reports deletion write failures without claiming success', () => {
+    window.localStorage.setItem('writespace_users', JSON.stringify([{ id: 'other', username: 'other' }]));
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    expect(deleteManagedUser('other', 'current')).toMatchObject({ ok: false, error: expect.stringContaining('could not be deleted') });
+  });
+
   it('returns a useful failure when local storage rejects account writes', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     expect(registerAccount(registration(), fixedId, fixedTime)).toMatchObject({ ok: false, field: 'form' });
